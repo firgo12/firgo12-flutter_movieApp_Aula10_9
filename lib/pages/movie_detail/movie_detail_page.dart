@@ -1,123 +1,77 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:movie_app/common/utils.dart';
+import 'package:movie_app/models/movie_model.dart';
+import 'package:movie_app/services/api_services.dart';
 
-class DetalhesFilmePage extends StatelessWidget {
+
+class MovieDetailPage extends StatefulWidget {
+  final int movieId;
+
+  const MovieDetailPage({Key? key, required this.movieId}) : super(key: key);
+
+  @override
+  _MovieDetailPageState createState() => _MovieDetailPageState();
+}
+
+class _MovieDetailPageState extends State<MovieDetailPage> {
+  late Future<Movie> movieFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    movieFuture = ApiServices().getMovieDetails(widget.movieId);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Detalhes do Filme'),
-        backgroundColor: Colors.amber[700],
+        title: const Text('Movie Details'),
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Imagem do filme
-            Container(
-              height: 250,
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: NetworkImage('https://link-para-imagem-filme.com/poster.jpg'),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            Padding(
+      body: FutureBuilder<Movie>(
+        future: movieFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          if (snapshot.hasData) {
+            final movie = snapshot.data!;
+            return Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Título e classificação
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Título do Filme',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          Icon(Icons.star, color: Colors.amber),
-                          SizedBox(width: 4),
-                          Text(
-                            '8.5/10',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  // Gênero, duração e data de lançamento
+                  Image.network('$imageUrl${movie.posterPath}'),
+                  const SizedBox(height: 10),
                   Text(
-                    'Gênero: Ação, Aventura',
-                    style: TextStyle(fontSize: 16),
+                    movie.title,
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
+                  const SizedBox(height: 10),
                   Text(
-                    'Duração: 2h 30min',
-                    style: TextStyle(fontSize: 16),
+                    'Release Date: ${DateFormat("d 'de' MMM 'de' y").format(movie.releaseDate!)}',
+                    style: const TextStyle(color: Colors.grey),
                   ),
+                  const SizedBox(height: 10),
                   Text(
-                    'Lançamento: 10 de Setembro, 2024',
-                    style: TextStyle(fontSize: 16),
+                    movie.overview,
+                    style: const TextStyle(fontSize: 16),
                   ),
-                  SizedBox(height: 16),
-                  // Sinopse
+                  const SizedBox(height: 10),
                   Text(
-                    'Sinopse',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '
-                    'Quisque sodales lorem ac purus consequat, nec egestas arcu tempor. '
-                    'Pellentesque id magna vitae neque facilisis facilisis.',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  SizedBox(height: 16),
-                  // Elenco
-                  Text(
-                    'Elenco',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Ator 1, Ator 2, Ator 3, Ator 4',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  SizedBox(height: 16),
-                  // Botão para assistir trailer
-                  Center(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        // Ação ao clicar no botão
-                      },
-                      icon: Icon(Icons.play_arrow),
-                      label: Text('Assistir Trailer'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.amber[700],
-                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        textStyle: TextStyle(fontSize: 18),
-                      ),
-                    ),
+                    'Rating: ${movie.voteAverage.toStringAsFixed(1)}/10',
+                    style: const TextStyle(color: Colors.yellow),
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
+            );
+          }
+          return const Center(child: Text('No data found'));
+        },
       ),
     );
   }
